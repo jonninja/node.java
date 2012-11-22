@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Node.java by jonninja</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1 class="header">Node.java</h1>
+        <p class="header">A java framework inspired by node.js, designed to make it easy to quickly build java web applications</p>
+
+        <ul>
+          <li class="download"><a class="buttons" href="https://github.com/jonninja/node.java/zipball/master">Download ZIP</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/jonninja/node.java/tarball/master">Download TAR</a></li>
+          <li><a class="buttons github" href="https://github.com/jonninja/node.java">View On GitHub</a></li>
+        </ul>
+
+        <p class="header">This project is maintained by <a class="header name" href="https://github.com/jonninja">jonninja</a></p>
+
+
+      </header>
+      <section>
+        <p>Node.Java is a Java framework inspired by many of the ideas in Node.JS and the Express framework.</p>
+
+<p>Part of the appeal of Node.js is the ability to create web applications that are easy to understand, and
+do so extremely quickly. For example, check out a node.js 'Hello World' application:</p>
+
+<pre><code>var express = require('express'),
+app = express.createServer();
+app.get('/', function(req, res){
+  res.send('Hello World');
+});
+app.listen(3000);
+</code></pre>
+
+<p>What makes this appealing isn't the few lines of code - a servlet based Hello World might not be that
+much more code. But the Express version is extremely easy to follow. There are not configuration files.
+There are no annotations. On larger scale applications, this might not matter much, but there is an
+enormous appeal to this kind of programming model, if the popularity of Node is any indication.</p>
+
+<p>Here's a Node.Java version of the same application:</p>
+
+<pre><code>public class HelloWorld {
+  public static void main(String[] args) {
+    Express express = new Express();
+    express.get("/", new Express.Handler() {
+      public void exec(Request req, Response res, Express.Next next) {
+        res.send("Hello World");
+      }
+    });
+  }
+}
+</code></pre>
+
+<p>Java requires that there be a little bit more code, but it maintains the clarity and simplicity
+of the Node.js version. Eventually, Lambda support in JDK8 will make the code even simpler.</p>
+      </section>
+      <footer>
+        <p><small>Hosted on <a href="https://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
+      </footer>
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+		
+  </body>
+</html>
