@@ -18,9 +18,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- *
+ * The HTTP response object
  */
-public class Response {
+public class Response extends AbstractEventEmitter {
   public static final String JSON_MIME = "application/json";
   public static final String HTML_MIME = "text/html";
   private HttpResponse response;
@@ -37,7 +37,13 @@ public class Response {
     this.request = request;
     response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
     this.e = e;
-    end = ChannelFutureListener.CLOSE;
+
+    end = new ChannelFutureListener() {
+      public void operationComplete(ChannelFuture future) throws Exception {
+        ChannelFutureListener.CLOSE.operationComplete(future);
+        emit("end", Response.this);
+      }
+    };
   }
 
   public void set(String key, String value) {
@@ -141,14 +147,14 @@ public class Response {
 
   private void write() {
     response.setHeader(HttpHeaders.Names.DATE, new Date());
-    ChannelFuture future = e.getChannel().write(response);
+    ChannelFuture future = writeResponse();
     future.addListener(end);
   }
 
   private void setResponseText(String text) {
     ChannelBuffer content = ChannelBuffers.copiedBuffer(text, CharsetUtil.UTF_8);
-    response.setContent(content);
     response.setHeader(HttpHeaders.Names.CONTENT_LENGTH, content.writerIndex());
+    response.setContent(content);
   }
 
   public void sendFile(File file) {
@@ -169,8 +175,8 @@ public class Response {
       }
       setIfEmpty(HttpHeaders.Names.CONTENT_TYPE, contentType);
 
+      writeResponse();
       Channel channel = e.getChannel();
-      channel.write(response);
       ChannelFuture future = channel.write(new ChunkedFile(file));
       future.addListener(end);
     } catch (IOException e1) {
@@ -178,9 +184,14 @@ public class Response {
     }
   }
 
+  private ChannelFuture writeResponse() {
+    Channel channel = e.getChannel();
+    emit("header", this);
+    return channel.write(response);
+  }
+
   /**
-   * Get access to the underlying netty channel for this
-   * @return
+   * Get access to the underlying netty channel for this response
    */
   public Channel channel() {
     return e.getChannel();

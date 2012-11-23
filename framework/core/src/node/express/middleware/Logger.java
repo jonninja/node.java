@@ -1,9 +1,9 @@
 package node.express.middleware;
 
+import node.express.EventEmitter;
 import node.express.Express;
 import node.express.Request;
 import node.express.Response;
-import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 
 /**
@@ -30,14 +30,11 @@ public class Logger implements Express.Handler {
   }
 
   public void exec(final Request req, final Response response, Express.Next next) {
-    final ChannelFutureListener end = response.end;
-    response.end = new ChannelFutureListener() {
-      public void operationComplete(ChannelFuture future) throws Exception {
-        response.end = end;
-        response.end.operationComplete(future);
+    response.on("end", new EventEmitter.Listener() {
+      public void event(Object data) {
         logger.info(formatter.format(req, response));
       }
-    };
+    });
     next.exec();
   }
 }
