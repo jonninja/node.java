@@ -147,7 +147,7 @@ public class Response extends AbstractEventEmitter {
   }
 
   private void write() {
-    response.setHeader(HttpHeaders.Names.DATE, new Date());
+    response.setHeader(HttpHeaders.Names.DATE, Dates.formatHttpDate(new Date()));
     ChannelFuture future = writeResponse();
     future.addListener(end);
   }
@@ -180,7 +180,7 @@ public class Response extends AbstractEventEmitter {
       }
 
       setIfEmpty(HttpHeaders.Names.CONTENT_LENGTH, size);
-      setIfEmpty(HttpHeaders.Names.DATE, new Date());
+      setIfEmpty(HttpHeaders.Names.DATE, Dates.formatHttpDate(new Date()));
       setIfEmpty(HttpHeaders.Names.LAST_MODIFIED, Dates.formatHttpDate(new Date(file.lastModified())));
 
       String contentType = MimeTypes.mimeTypeFromFile(file);

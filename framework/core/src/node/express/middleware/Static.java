@@ -5,11 +5,9 @@ import node.express.Request;
 import node.express.Response;
 
 import java.io.File;
-import java.net.URISyntaxException;
-import java.net.URL;
 
 /**
- *
+ * Middleware to serve static files
  */
 public class Static implements Express.Handler {
   private String basePath;
@@ -27,6 +25,7 @@ public class Static implements Express.Handler {
 
   /**
    * Set the cache control header for assets served
+   *
    * @param age the length of time to cache, in ms
    */
   public Static maxAge(long age) {
@@ -36,30 +35,18 @@ public class Static implements Express.Handler {
 
   public void exec(Request req, Response res, Express.Next next) {
     String path = (String) req.param("wildcard");
-
     if (!path.startsWith("/")) {
       path = "/" + path;
     }
-
     if (path.endsWith("/")) {
       path = path + "index.html";
     }
 
-    URL url = Static.class.getClassLoader().getResource(basePath + path);
-    if (url == null) {
+    File srcFile = new File(basePath + path);
+    if (!srcFile.exists()) {
       res.send(404);
     } else {
-      if (url.getProtocol().equals("file")) {
-        try {
-          File file = new File(url.toURI());
-          res.sendFile(file);
-        } catch (URISyntaxException e) {
-          throw new RuntimeException(e);
-        }
-      } else {
-
-      }
+      res.sendFile(srcFile);
     }
-
   }
 }

@@ -1,3 +1,4 @@
+import lesscss.Less;
 import node.express.Express;
 
 /**
@@ -7,7 +8,8 @@ public class StaticServer {
   public static void main(String[] args) {
     Express app = new Express();
     app.use(app.logger());
-    app.use(app.staticFiles("/public/"));
+    app.use(new Less().basePath("public/"));
+    app.use(app.staticFiles("public/"));
     app.listen(3000);
   }
 }
