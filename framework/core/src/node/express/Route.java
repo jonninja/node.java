@@ -30,6 +30,10 @@ public class Route {
     boolean optional;
   }
 
+  public String path() {
+    return path;
+  }
+
   /**
    * Does this route's signature match the path
    */
@@ -45,6 +49,8 @@ public class Route {
         if (keys.size() >= i) {
           String key = keys.get(i - 1);
           result.put(key, value);
+        } else {
+          result.put("wildcard", value);
         }
       }
     }

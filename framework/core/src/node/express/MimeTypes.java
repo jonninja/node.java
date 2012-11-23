@@ -15,6 +15,8 @@ public class MimeTypes {
     put("html", "text/html");
     put("json", "application/json");
     put("gif", "image/gif");
+    put("css", "text/css");
+    put("js", "application/javascript");
   }};
 
   public static String mimeTypeFromExt(String ext) {

@@ -60,6 +60,10 @@ public class Request {
     return queryParams;
   }
 
+  public Route route() {
+    return route;
+  }
+
   public Express app() {
     return app;
   }
@@ -113,7 +117,19 @@ public class Request {
    * Get the case-insensitive request header.
    */
   public String get(String key) {
-    return null;
+    return header(key);
+  }
+
+  /**
+   * Get the case-insensitive request header.
+   */
+  public String header(String key) {
+    List<String> headers = request.getHeaders(key);
+    if (headers != null && headers.size() > 0) {
+      return headers.get(0);
+    } else {
+      return null;
+    }
   }
 
   public boolean accepts(String type) {

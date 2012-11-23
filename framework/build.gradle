@@ -18,4 +18,5 @@ dependencies {
     compile 'io.netty:netty:3.5.7.Final'
     compile 'org.apache.velocity:velocity:1.7'
     compile 'org.freemarker:freemarker:2.3.19'
+    compile 'commons-codec:commons-codec:1.7'
 }

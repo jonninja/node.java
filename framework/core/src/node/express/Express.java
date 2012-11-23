@@ -223,6 +223,7 @@ public class Express {
    */
   public void use(String path, Handler middleware) {
     Route route = new Route("all", path, new Handler[] {middleware});
+    this.middleware.add(route);
   }
 
   /**

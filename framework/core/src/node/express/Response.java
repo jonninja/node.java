@@ -86,6 +86,10 @@ public class Response {
     return response.getStatus().getCode();
   }
 
+  public void status(int status) {
+    response.setStatus(HttpResponseStatus.valueOf(status));
+  }
+
   public void send(int statusCode) {
     response.setStatus(HttpResponseStatus.valueOf(statusCode));
     write();
@@ -172,5 +176,13 @@ public class Response {
     } catch (IOException e1) {
       throw new RuntimeException(e1);
     }
+  }
+
+  /**
+   * Get access to the underlying netty channel for this
+   * @return
+   */
+  public Channel channel() {
+    return e.getChannel();
   }
 }
