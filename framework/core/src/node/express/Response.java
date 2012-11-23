@@ -14,6 +14,8 @@ import org.jboss.netty.util.CharsetUtil;
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
@@ -24,6 +26,7 @@ public class Response {
   private HttpResponse response;
   private MessageEvent e;
   private Request request;
+  private Map locals = new HashMap();
 
   /**
    * Handles the end of the response stream. Typically closes the stream.
@@ -61,12 +64,13 @@ public class Response {
 
   }
 
-  public void render(String template) {
-
+  public void render(String view) {
+    render(view, this.locals);
   }
 
-  public void render(String template, Object data) {
-
+  public void render(String view, Map data) {
+    String rendered = request.app().render(view, data);
+    send(rendered);
   }
 
   public void redirect(int code, String url) {

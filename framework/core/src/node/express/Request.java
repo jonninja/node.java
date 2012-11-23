@@ -10,6 +10,7 @@ import java.util.*;
  *
  */
 public class Request {
+  private Express app;
   private Map<String, Object> attributes = new HashMap<String, Object>();
   private HttpRequest request;
   private ReadOnlyMultiMap<String, String> queryParams;
@@ -18,9 +19,10 @@ public class Request {
   private long startTime;
   private Map<String, String> params;
 
-  public Request(MessageEvent e) {
+  public Request(Express app, MessageEvent e) {
     startTime = System.currentTimeMillis();
     request = (HttpRequest) e.getMessage();
+    this.app = app;
 
     QueryStringDecoder queryStringDecoder = new QueryStringDecoder(request.getUri());
     path = queryStringDecoder.getPath();
@@ -56,6 +58,10 @@ public class Request {
 
   public Map<String, String> query() {
     return queryParams;
+  }
+
+  public Express app() {
+    return app;
   }
 
   /**

@@ -1,4 +1,5 @@
 apply plugin: 'java'
+apply plugin: 'idea'
 
 sourceSets {
     main {
@@ -15,4 +16,6 @@ repositories {
 dependencies {
     compile 'com.fasterxml.jackson.core:jackson-databind:2.0.6'
     compile 'io.netty:netty:3.5.7.Final'
+    compile 'org.apache.velocity:velocity:1.7'
+    compile 'org.freemarker:freemarker:2.3.19'
 }

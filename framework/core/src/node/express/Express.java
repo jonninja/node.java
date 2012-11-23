@@ -1,7 +1,11 @@
 package node.express;
 
 import node.express.middleware.BodyParser;
+import node.express.middleware.Directory;
 import node.express.middleware.Logger;
+import node.express.middleware.Static;
+import node.express.renderers.Freemarker;
+import node.express.renderers.Velocity;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
@@ -15,11 +19,14 @@ import java.util.*;
 import java.util.concurrent.Executors;
 
 /**
- *
+ * An express app
  */
 public class Express {
   private ServerBootstrap bootstrap;
+  private Map<String, Object> settings = new HashMap<String, Object>();
   private Map<String, List<Route>> handlerMap = new HashMap<String, List<Route>>();
+  private Map<String, Renderer> renderers = new HashMap<String, Renderer>();
+  private Map<String, Object> locals = new HashMap<String, Object>();
 
   private List<Route> middleware = new ArrayList<Route>();
 
@@ -27,19 +34,30 @@ public class Express {
     void exec();
   }
 
+  /**
+   * Interface to implement for all request handlers.
+   */
   public interface Handler {
     void exec(Request req, Response res, Express.Next next);
   }
 
+  /**
+   * An implementation of a request handler that calls a method on an object
+   */
   public static class ObjectHandler implements Handler {
     private Method method;
     private Object obj;
     private boolean hasNext;
 
-    public ObjectHandler(Object obj, String methodName) {
-      this.obj = obj;
+    /**
+     * Construct the object handler for a static method. The method must have a signature of
+     * (Request, Response) or (Request, Response, Next)
+     * @param clazz the class
+     * @param methodName the name of the method
+     */
+    public ObjectHandler(Class clazz, String methodName) {
       try {
-        method = obj.getClass().getMethod(methodName, Request.class, Response.class);
+        method = clazz.getMethod(methodName, Request.class, Response.class);
         hasNext = false;
       } catch (NoSuchMethodException e) {
         try {
@@ -48,6 +66,17 @@ public class Express {
           throw new RuntimeException("Method not found");
         }
       }
+    }
+
+    /**
+     * Construct an object handler for an object method. The method must have a signature of
+     * (Request, Response) or (Request, Response, Next)
+     * @param obj the object
+     * @param methodName the name of the method to invoke.
+     */
+    public ObjectHandler(Object obj, String methodName) {
+      this(obj.getClass(), methodName);
+      this.obj = obj;
     }
 
     public void exec(Request req, Response res, Next next) {
@@ -65,26 +94,37 @@ public class Express {
     }
   }
 
+  /**
+   * Construct an Express application
+   */
   public Express() {
     bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(
         Executors.newCachedThreadPool(),
         Executors.newCachedThreadPool()
     ));
     bootstrap.setPipelineFactory(new PipelineFactory());
+
+    settings.put("views", "views/");
+
+    // register some default rendering engines
+    renderers.put("vm", new Velocity());
+    renderers.put("ftl", new Freemarker());
+
+    locals.put("settings", settings);
   }
 
   /**
    * Assigns setting name to value
    */
   public void set(String name, Object value) {
-
+    settings.put(name, value);
   }
 
   /**
    * Get setting name value
    */
   public Object get(String name) {
-    return null;
+    return settings.get(name);
   }
 
   /**
@@ -108,43 +148,157 @@ public class Express {
     return false;
   }
 
-  public void use(Handler callback) {
-    Route route = new Route("all", "*", new Handler[] { callback });
+  /**
+   * Register a rendering engine
+   * @param ext the extension
+   * @param renderer the renderer to use
+   */
+  public void engine(String ext, Renderer renderer) {
+    renderers.put(ext, renderer);
+  }
+
+  /**
+   * Render a view with a callback responding with the rendered string. This is the app-level variant of
+   * Response.render(), and otherwise behaves the same way.
+   * @param view the name of the view to render
+   * @param context the context, which should include data used by the template engine
+   * @return the rendered text
+   */
+  public String render(String view, Map context) {
+    int i = view.lastIndexOf(".");
+    String ext;
+    if (i >= 0) {
+      ext = view.substring(i + 1);
+    } else {
+      ext = (String) settings.get("view engine");
+      if (ext == null) {
+        throw new IllegalArgumentException("No default view set for view without extension");
+      }
+      view = view + "." + ext;
+    }
+    Renderer renderer = renderers.get(ext);
+    if (renderer == null) {
+      throw new IllegalArgumentException("No renderer for ext: " + ext);
+    }
+
+    Map mergedContext = new HashMap();
+    mergedContext.putAll(locals);
+    if (context != null) {
+      mergedContext.putAll(context);
+    }
+    return renderer.render(settings.get("views") + view, mergedContext);
+  }
+
+  /**
+   * Application local variables are provided to all templates rendered within the application.
+   * This is useful for providing helper functions to templates, as well as app-level data.
+   *
+   * By default 'settings' is included in the locals, so renderers will have access to any settings
+   * in the application. So, app.set("title", "My app") is accessible at settings.title
+   */
+  public Map<String, Object> locals() {
+    return locals;
+  }
+
+  /**
+   * Batch add a number of locals
+   */
+  public void locals(Map<String, Object> locals) {
+    locals.putAll(locals);
+  }
+
+  /**
+   * Install global middleware. The middleware will be called for all requests
+   */
+  public void use(Handler middleware) {
+    Route route = new Route("all", "*", new Handler[] { middleware });
     this.middleware.add(route);
   }
 
+  /**
+   * Install middleware for the given path specification. Middleware will be called
+   * only for requests that match this path.
+   * @param path the path specification
+   * @param middleware the middleware
+   */
   public void use(String path, Handler middleware) {
-
+    Route route = new Route("all", path, new Handler[] {middleware});
   }
 
+  /**
+   * Convenience method for getting the static file middleware. All files below
+   * the given root path will be made available
+   * @param path the root path for the files
+   */
   public Handler staticFiles(String path) {
-    return null;
+    return new Static(path);
   }
 
+  /**
+   * Convenience method for creating the logger middleware. For more options,
+   * create the Logger middleware directly
+   */
   public Handler logger() {
     return new Logger();
   }
 
+  /**
+   * Convenience method for creating the BodyParser middleware. The BodyParser automatically
+   * parses JSON and UrlEncoded content and makes it avaialble via Request.body().
+   */
   public Handler bodyParser() {
     return new BodyParser();
+  }
+
+  public Handler directory(String path) {
+    return new Directory(path);
   }
 
   public void listen(int port) {
     bootstrap.bind(new InetSocketAddress(port));
   }
 
+  /**
+   * Install a GET handler
+   * @param path the path spec
+   * @param handler the handler
+   */
   public void get(String path, Handler... handler) {
     addRoute("get", path, handler);
   }
+
+  /**
+   * Install a POST handler
+   * @param path the path spec
+   * @param handler the handler
+   */
   public void post(String path, Handler... handler) {
     addRoute("post", path, handler);
   }
+
+  /**
+   * Install a DELETE handler
+   * @param path the path spec
+   * @param handler the handler
+   */
   public void del(String path, Handler... handler) {
     addRoute("delete", path, handler);
   }
+
+  /**
+   * Install a PUT handler
+   * @param path the path spec
+   * @param handler the handler
+   */
   public void put(String path, Handler... handler) {
     addRoute("put", path, handler);
   }
+
+  /**
+   * Install a handler for all HTTP methods
+   * @param path the path spec
+   * @param handler the handler
+   */
   public void all(String path, Handler... handler) {
     addRoute("*", path, handler);
   }
@@ -164,12 +318,6 @@ public class Express {
       handlerMap.put(verb, routes);
     }
     routes.add(impl);
-  }
-
-  private class NoOpNextHandler implements Next {
-    public void exec() {
-      // if we got here, we didn't handle the request, so send
-    }
   }
 
   /**
@@ -246,13 +394,17 @@ public class Express {
     }
   }
 
+  /**
+   * Our core request handler that receives messages from Netty and passes them
+   * along to handlers
+   */
   private class RequestHandler extends SimpleChannelUpstreamHandler {
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
       HttpRequest request = (HttpRequest) e.getMessage();
       HttpMethod method = request.getMethod();
 
-      final Request req = new Request(e);
+      final Request req = new Request(Express.this, e);
       final Response res = new Response(req, e);
 
       List<Route> handlers = handlerMap.get(method.getName().toLowerCase());
@@ -273,6 +425,9 @@ public class Express {
     }
   }
 
+  /**
+   * Intialization of the Netty pipeline
+   */
   private class PipelineFactory implements ChannelPipelineFactory {
     public ChannelPipeline getPipeline() throws Exception {
       ChannelPipeline pipeline = Channels.pipeline();
