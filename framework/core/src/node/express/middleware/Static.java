@@ -13,6 +13,7 @@ import java.net.URL;
  */
 public class Static implements Express.Handler {
   private String basePath;
+  private long maxAge = -1;
 
   public Static(String basePath) {
     if (basePath.startsWith("/")) {
@@ -22,6 +23,15 @@ public class Static implements Express.Handler {
       basePath = basePath.substring(0, basePath.length() - 1);
     }
     this.basePath = basePath;
+  }
+
+  /**
+   * Set the cache control header for assets served
+   * @param age the length of time to cache, in ms
+   */
+  public Static maxAge(long age) {
+    this.maxAge = age;
+    return this;
   }
 
   public void exec(Request req, Response res, Express.Next next) {

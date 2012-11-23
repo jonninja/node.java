@@ -13,6 +13,7 @@ import org.jboss.netty.util.CharsetUtil;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -165,9 +166,22 @@ public class Response extends AbstractEventEmitter {
       }
       long size = file.length();
 
+      String ifModifiedString = request.header(HttpHeaders.Names.IF_MODIFIED_SINCE);
+      if (ifModifiedString != null) {
+        try {
+          Date ifModifiedDate = Dates.parseHttpDate(ifModifiedString);
+          if (ifModifiedDate.getTime() >= file.lastModified()) {
+            send(304);
+            return;
+          }
+        } catch (ParseException e1) {
+          // if can't parse, just ignore
+        }
+      }
+
       setIfEmpty(HttpHeaders.Names.CONTENT_LENGTH, size);
       setIfEmpty(HttpHeaders.Names.DATE, new Date());
-      setIfEmpty(HttpHeaders.Names.LAST_MODIFIED, new Date(file.lastModified()));
+      setIfEmpty(HttpHeaders.Names.LAST_MODIFIED, Dates.formatHttpDate(new Date(file.lastModified())));
 
       String contentType = MimeTypes.mimeTypeFromFile(file);
       if (contentType == null) {
