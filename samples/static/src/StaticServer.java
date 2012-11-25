@@ -1,4 +1,5 @@
 import lesscss.Less;
+import node.Configuration;
 import node.express.Express;
 
 /**
@@ -6,6 +7,8 @@ import node.express.Express;
  */
 public class StaticServer {
   public static void main(String[] args) {
+    Configuration.load("settings.json");
+
     Express app = new Express();
     app.use(app.logger());
     app.use(new Less().basePath("public/"));

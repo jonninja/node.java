@@ -27,6 +27,8 @@ project(':framework:core') {
         compile 'org.apache.velocity:velocity:1.7'
         compile 'org.freemarker:freemarker:2.3.19'
         compile 'commons-codec:commons-codec:1.7'
+        compile 'org.apache.httpcomponents:httpclient:4.2.1'
+        compile 'commons-io:commons-io:2.4'
     }
 }
 
